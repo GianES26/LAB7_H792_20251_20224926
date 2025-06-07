@@ -12,51 +12,51 @@ public class Proveedor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "razon_social", nullable = false, length = 100)
     private String razonSocial;
 
-    @Column(length = 100)
+    @Column(name = "nombre_comercial", length = 100)
     private String nombreComercial;
 
-    @Column(nullable = false, length = 11, unique = true)
+    @Column(name = "ruc", nullable = false, length = 11, unique = true)
     private String ruc;
 
-    @Column(length = 15)
+    @Column(name = "telefono", length = 15)
     private String telefono;
 
-    @Column(length = 100)
+    @Column(name = "correo_electronico", length = 100)
     private String correoElectronico;
 
-    @Column(length = 100)
+    @Column(name = "sitio_web", length = 100)
     private String sitioWeb;
 
-    @Column(length = 150)
+    @Column(name = "direccion_fisica", length = 150)
     private String direccionFisica;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "pais", nullable = false, length = 50)
     private String pais;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "representante_legal", nullable = false, length = 100)
     private String representanteLegal;
 
-    @Column(nullable = false, length = 8)
+    @Column(name = "dni_representante_legal", nullable = false, length = 8)
     private String dniRepresentanteLegal;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "tipo_proveedor", nullable = false, length = 20)
     private String tipoProveedor;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "categoria", nullable = false, length = 20)
     private String categoria;
 
-    @Column
+    @Column(name = "facturacion_anual_dolares")
     private Double facturacionAnualDolares;
 
-    @Column(nullable = false)
+    @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
 
-    @Column
+    @Column(name = "ultima_actualizacion")
     private LocalDateTime ultimaActualizacion;
 
-    @Column(nullable = false)
+    @Column(name = "estado", nullable = false)
     private boolean estado;
 }

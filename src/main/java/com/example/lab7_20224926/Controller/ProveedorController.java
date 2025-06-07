@@ -1,4 +1,239 @@
 package com.example.lab7_20224926.Controller;
 
+import com.example.lab7_20224926.Service.ProveedorService;
+import com.example.lab7_20224926.Entity.Proveedor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/proveedores")
 public class ProveedorController {
+
+    private final ProveedorService proveedorService;
+
+    public ProveedorController(ProveedorService proveedorService) {
+        this.proveedorService = proveedorService;
+    }
+
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getAllProveedores() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            return ResponseEntity.ok(proveedorService.getAllProveedores());
+        } catch (Exception e) {
+            response.put("error", "Error al obtener la lista de proveedores: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> getProveedorById(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            return ResponseEntity.ok(proveedorService.getProveedorById(id));
+        } catch (RuntimeException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(404).body(response);
+        } catch (Exception e) {
+            response.put("error", "Error interno al buscar el proveedor: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createProveedor(@RequestBody Proveedor input) {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
+
+        if (input.getRazonSocial() == null || input.getRazonSocial().isBlank() || input.getRazonSocial().length() > 100) {
+            errors.put("razonSocial", "La razón social es obligatoria y no debe exceder 100 caracteres");
+        } else if (!input.getRazonSocial().matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]+$")) {
+            errors.put("razonSocial", "La razón social debe ser alfanumérica");
+        }
+
+        if (input.getNombreComercial() != null && input.getNombreComercial().length() > 100) {
+            errors.put("nombreComercial", "El nombre comercial no debe exceder 100 caracteres");
+        } else if (input.getNombreComercial() != null && !input.getNombreComercial().matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]*$")) {
+            errors.put("nombreComercial", "El nombre comercial debe ser alfanumérico");
+        }
+
+        if (input.getRuc() == null || input.getRuc().isBlank()) {
+            errors.put("ruc", "El RUC es obligatorio");
+        } else if (!input.getRuc().matches("^[0-9]{11}$")) {
+            errors.put("ruc", "El RUC debe tener exactamente 11 dígitos numéricos");
+        } else if (proveedorService.proveedorRepository.existsByRuc(input.getRuc())) {
+            errors.put("ruc", "El RUC ya está registrado");
+        }
+
+        if (input.getTelefono() != null && !input.getTelefono().matches("^[0-9]{9,15}$")) {
+            errors.put("telefono", "El teléfono debe ser numérico y entre 9 y 15 dígitos");
+        }
+
+        if (input.getCorreoElectronico() != null && !input.getCorreoElectronico().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            errors.put("correoElectronico", "El correo electrónico debe tener un formato válido");
+        }
+
+        if (input.getSitioWeb() != null && !input.getSitioWeb().matches("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$")) {
+            errors.put("sitioWeb", "El sitio web debe tener un formato de URL válido");
+        }
+
+        if (input.getDireccionFisica() != null && input.getDireccionFisica().length() > 150) {
+            errors.put("direccionFisica", "La dirección física no debe exceder 150 caracteres");
+        }
+
+        if (input.getPais() == null || input.getPais().isBlank()) {
+            errors.put("pais", "El país es obligatorio");
+        } else if (!input.getPais().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) {
+            errors.put("pais", "El país debe ser alfabético");
+        }
+
+        if (input.getRepresentanteLegal() == null || input.getRepresentanteLegal().isBlank()) {
+            errors.put("representanteLegal", "El representante legal es obligatorio");
+        } else if (!input.getRepresentanteLegal().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) {
+            errors.put("representanteLegal", "El representante legal debe ser alfabético");
+        }
+
+        if (input.getDniRepresentanteLegal() == null || input.getDniRepresentanteLegal().isBlank()) {
+            errors.put("dniRepresentanteLegal", "El DNI del representante legal es obligatorio");
+        } else if (!input.getDniRepresentanteLegal().matches("^[0-9]{8}$")) {
+            errors.put("dniRepresentanteLegal", "El DNI del representante legal debe tener 8 dígitos numéricos");
+        }
+
+        if (input.getTipoProveedor() == null || input.getTipoProveedor().isBlank()) {
+            errors.put("tipoProveedor", "El tipo de proveedor es obligatorio");
+        } else if (!input.getTipoProveedor().matches("^(Nacional|Internacional)$")) {
+            errors.put("tipoProveedor", "El tipo de proveedor debe ser 'Nacional' o 'Internacional'");
+        }
+
+        if (input.getCategoria() == null || input.getCategoria().isBlank()) {
+            errors.put("categoria", "La categoría es obligatoria");
+        } else if (!input.getCategoria().matches("^(Servicios|Productos|Tecnología|Otros)$")) {
+            errors.put("categoria", "La categoría debe ser 'Servicios', 'Productos', 'Tecnología' o 'Otros'");
+        }
+
+        if (input.getFacturacionAnualDolares() != null && input.getFacturacionAnualDolares() < 0) {
+            errors.put("facturacionAnualDolares", "La facturación anual no puede ser negativa");
+        }
+
+        if (!errors.isEmpty()) {
+            response.put("error", errors);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        return ResponseEntity.status(201).body(proveedorService.createProveedor(input));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> updateProveedor(@PathVariable Long id, @RequestBody Proveedor updateRequest) {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
+
+        Proveedor existing = proveedorService.proveedorRepository.findById(id).orElse(null);
+        if (existing == null) {
+            response.put("error", "Proveedor con ID " + id + " no encontrado");
+            return ResponseEntity.status(404).body(response);
+        }
+
+        if (updateRequest.getRazonSocial() != null) {
+            if (updateRequest.getRazonSocial().isBlank() || updateRequest.getRazonSocial().length() > 100) {
+                errors.put("razonSocial", "La razón social no debe exceder 100 caracteres");
+            } else if (!updateRequest.getRazonSocial().matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]+$")) {
+                errors.put("razonSocial", "La razón social debe ser alfanumérica");
+            }
+        }
+
+        if (updateRequest.getNombreComercial() != null) {
+            if (updateRequest.getNombreComercial().length() > 100) {
+                errors.put("nombreComercial", "El nombre comercial no debe exceder 100 caracteres");
+            } else if (!updateRequest.getNombreComercial().matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]*$")) {
+                errors.put("nombreComercial", "El nombre comercial debe ser alfanumérico");
+            }
+        }
+
+        if (updateRequest.getTelefono() != null && !updateRequest.getTelefono().matches("^[0-9]{9,15}$")) {
+            errors.put("telefono", "El teléfono debe ser numérico y entre 9 y 15 dígitos");
+        }
+
+        if (updateRequest.getCorreoElectronico() != null && !updateRequest.getCorreoElectronico().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            errors.put("correoElectronico", "El correo electrónico debe tener un formato válido");
+        }
+
+        if (updateRequest.getSitioWeb() != null && !updateRequest.getSitioWeb().matches("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$")) {
+            errors.put("sitioWeb", "El sitio web debe tener un formato de URL válido");
+        }
+
+        if (updateRequest.getDireccionFisica() != null && updateRequest.getDireccionFisica().length() > 150) {
+            errors.put("direccionFisica", "La dirección física no debe exceder 150 caracteres");
+        }
+
+        if (updateRequest.getPais() != null) {
+            if (updateRequest.getPais().isBlank()) {
+                errors.put("pais", "El país es obligatorio");
+            } else if (!updateRequest.getPais().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) {
+                errors.put("pais", "El país debe ser alfabético");
+            }
+        }
+
+        if (updateRequest.getRepresentanteLegal() != null) {
+            if (updateRequest.getRepresentanteLegal().isBlank()) {
+                errors.put("representanteLegal", "El representante legal es obligatorio");
+            } else if (!updateRequest.getRepresentanteLegal().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$")) {
+                errors.put("representanteLegal", "El representante legal debe ser alfabético");
+            }
+        }
+
+        if (updateRequest.getDniRepresentanteLegal() != null) {
+            if (updateRequest.getDniRepresentanteLegal().isBlank()) {
+                errors.put("dniRepresentanteLegal", "El DNI del representante legal es obligatorio");
+            } else if (!updateRequest.getDniRepresentanteLegal().matches("^[0-9]{8}$")) {
+                errors.put("dniRepresentanteLegal", "El DNI del representante legal debe tener 8 dígitos numéricos");
+            }
+        }
+
+        if (updateRequest.getTipoProveedor() != null) {
+            if (updateRequest.getTipoProveedor().isBlank()) {
+                errors.put("tipoProveedor", "El tipo de proveedor es obligatorio");
+            } else if (!updateRequest.getTipoProveedor().matches("^(Nacional|Internacional)$")) {
+                errors.put("tipoProveedor", "El tipo de proveedor debe ser 'Nacional' o 'Internacional'");
+            }
+        }
+
+        if (updateRequest.getCategoria() != null) {
+            if (updateRequest.getCategoria().isBlank()) {
+                errors.put("categoria", "La categoría es obligatoria");
+            } else if (!updateRequest.getCategoria().matches("^(Servicios|Productos|Tecnología|Otros)$")) {
+                errors.put("categoria", "La categoría debe ser 'Servicios', 'Productos', 'Tecnología' o 'Otros'");
+            }
+        }
+
+        if (updateRequest.getFacturacionAnualDolares() != null && updateRequest.getFacturacionAnualDolares() < 0) {
+            errors.put("facturacionAnualDolares", "La facturación anual no puede ser negativa");
+        }
+
+        if (!errors.isEmpty()) {
+            response.put("error", errors);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        return ResponseEntity.ok(proveedorService.updateProveedor(id, updateRequest));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteProveedor(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Proveedor existing = proveedorService.proveedorRepository.findById(id).orElse(null);
+            if (existing == null) {
+                response.put("error", "Proveedor con ID " + id + " no encontrado");
+                return ResponseEntity.status(404).body(response);
+            }
+            return ResponseEntity.ok(proveedorService.deleteProveedor(id));
+        } catch (Exception e) {
+            response.put("error", "Error al eliminar el proveedor: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 }
